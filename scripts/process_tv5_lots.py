@@ -151,8 +151,8 @@ def transcribe(audio_path: Path, out_path: Path, *, force: bool = False) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/romanfbot/tcf-transcripts",
-        "X-Title": "TCF Transcripts",
+        "HTTP-Referer": "https://github.com/romanfbot/better-tv5monde-tcf",
+        "X-Title": "Better TV5MONDE TCF",
     }
     response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=600)
     if not response.ok:

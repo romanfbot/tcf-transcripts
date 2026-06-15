@@ -1,8 +1,15 @@
-# TCF practice with transcripts
+# Better TV5MONDE TCF
 
-A small static website that improves the TV5MONDE TCF practice-test experience by adding automatic transcripts to the listening questions.
+A small static website that makes TV5MONDE TCF listening practice easier to study from.
 
-Published site: https://romanfbot.github.io/tcf-transcripts/
+Published site: https://romanfbot.github.io/better-tv5monde-tcf/
+
+## Why this is better than the original TV5MONDE practice flow
+
+- **Transcripts:** every listening question includes an automatically generated French transcript next to the audio, so you can review what you heard after answering.
+- **Immediate answer review:** the correct answer is shown right after you choose an option, instead of only after finishing the full test.
+- **Question-by-question practice:** you can jump between tests and individual questions without restarting a full timed flow.
+- **Original materials preserved:** audio, images, answer options, and source links still come from TV5MONDE.
 
 ## What is included
 

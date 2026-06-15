@@ -1,7 +1,7 @@
 {
   "version": 3,
   "source": "tv5monde-tcf",
-  "description": "TV5MONDE TCF listening-practice lots with extracted answers and OpenRouter transcripts.",
+  "description": "Better TV5MONDE TCF listening-practice data with extracted answers and OpenRouter transcripts.",
   "lots": [
     {
       "id": "tv5monde-tcf-58",

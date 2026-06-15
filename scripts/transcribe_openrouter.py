@@ -28,7 +28,7 @@ payload={
   'language': args.language,
   'temperature': 0
 }
-headers={'Authorization':f'Bearer {api_key}','Content-Type':'application/json','HTTP-Referer':'https://github.com/romanfbot/tcf-transcripts','X-Title':'TCF Transcripts'}
+headers={'Authorization':f'Bearer {api_key}','Content-Type':'application/json','HTTP-Referer':'https://github.com/romanfbot/better-tv5monde-tcf','X-Title':'Better TV5MONDE TCF'}
 r=requests.post('https://openrouter.ai/api/v1/audio/transcriptions',headers=headers,json=payload,timeout=600)
 print('status', r.status_code)
 print('generation', r.headers.get('X-Generation-Id'))
