@@ -198,7 +198,11 @@ function goToNextQuestion() {
   state.question = next;
   els.questionSelect.value = String(next.number);
   render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  scrollQuestionMetaIntoView();
+}
+
+function scrollQuestionMetaIntoView() {
+  els.questionMeta.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function updateNextButton() {
