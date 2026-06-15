@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TCF — транскрипты аудио</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Prototype</p>
+        <h1>TCF — транскрипты пробных аудио</h1>
+        <p>
+          Небольшой сайт для чтения транскриптов к тренировочным заданиям TCF от TV5MONDE.
+          Сейчас опубликован один тестовый прогон: <strong>Entraînement n°1</strong>, распознанный через
+          OpenRouter Whisper Large V3.
+        </p>
+      </header>
+
+      <section class="panel controls" aria-label="Выбор транскрипта">
+        <label>
+          <span>Номер теста</span>
+          <select id="testSelect"></select>
+        </label>
+        <label>
+          <span>Номер задания</span>
+          <select id="taskSelect"></select>
+        </label>
+      </section>
+
+      <section class="panel transcript-card" aria-live="polite">
+        <div class="card-topline">
+          <div>
+            <p class="eyebrow" id="taskMeta">Загрузка…</p>
+            <h2 id="taskTitle">Транскрипт</h2>
+          </div>
+          <a id="audioLink" class="button" href="#" target="_blank" rel="noreferrer">Открыть аудио</a>
+        </div>
+        <article id="transcript" class="transcript"></article>
+      </section>
+
+      <section class="panel notes">
+        <h2>Источники и оговорки</h2>
+        <ul>
+          <li><a id="sourcePage" href="#" target="_blank" rel="noreferrer">Страница TV5MONDE с livrets d’entraînement</a></li>
+          <li><a id="sourcePdf" href="#" target="_blank" rel="noreferrer">PDF livret для выбранного теста</a></li>
+          <li>Транскрипт автоматический; перед массовым добавлением стоит вычитать спорные места.</li>
+          <li>Разбиение на задания в этом прототипе автоматическое по маркерам «Question …» / «Regardez l’image …».</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
