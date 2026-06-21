@@ -82,6 +82,81 @@ a { color: var(--accent); }
   padding: 20px;
 }
 
+.progress-card {
+  margin: 0 0 24px;
+  padding: 20px;
+}
+
+.progress-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.result-summary {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.result-summary.complete {
+  color: var(--good);
+}
+
+.test-progress {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.progress-pill {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.progress-pill strong {
+  font-size: 0.95rem;
+}
+
+.progress-pill span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.progress-pill.current {
+  border-color: rgba(31, 95, 139, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(31, 95, 139, 0.18);
+}
+
+.progress-pill.started {
+  background: #fff7ea;
+}
+
+.progress-pill.completed {
+  background: var(--good-bg);
+  border-color: rgba(22, 121, 75, 0.35);
+}
+
+.progress-pill.completed span {
+  color: var(--good);
+}
+
+.progress-pill:hover {
+  transform: translateY(-1px);
+}
+
 label span {
   display: block;
   margin: 0 0 8px;
@@ -140,7 +215,12 @@ select {
 }
 
 .button.secondary { background: #efe4d5; color: var(--text); }
-.button:focus-visible, .answer:focus-visible, select:focus-visible, summary:focus-visible {
+.button.compact {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+}
+.button:focus-visible, .answer:focus-visible, .progress-pill:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 3px solid rgba(31, 95, 139, 0.35);
   outline-offset: 3px;
 }
@@ -318,7 +398,7 @@ code {
 @media (max-width: 900px) {
   .layout, .controls { grid-template-columns: 1fr; }
   .answer-card { position: static; }
-  .card-topline { flex-direction: column; }
+  .card-topline, .progress-heading { flex-direction: column; }
   .button { width: 100%; }
 }
 

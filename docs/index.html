@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Better TV5MONDE TCF</title>
-    <link rel="stylesheet" href="./styles.css?v=minimal-footer" />
+    <link rel="stylesheet" href="./styles.css?v=progress-results" />
   </head>
   <body>
     <main class="shell">
@@ -25,6 +25,18 @@
           <span>Question</span>
           <select id="questionSelect"></select>
         </label>
+      </section>
+
+      <section class="panel progress-card" aria-label="Saved progress">
+        <div class="progress-heading">
+          <div>
+            <p class="eyebrow">Saved locally</p>
+            <h2>Progress</h2>
+          </div>
+          <button id="resetProgressButton" class="button secondary compact" type="button">Reset progress</button>
+        </div>
+        <p id="currentResult" class="result-summary" aria-live="polite"></p>
+        <div id="testProgress" class="test-progress" role="list"></div>
       </section>
 
       <section class="layout">

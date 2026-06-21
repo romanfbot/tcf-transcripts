@@ -1,3 +1,5 @@
+const STORAGE_KEY = 'better-tv5monde-tcf-progress-v1';
+
 const state = {
   data: null,
   lot: null,
@@ -24,6 +26,9 @@ const els = {
   modelMeta: document.querySelector('#modelMeta'),
   transcriptDetails: document.querySelector('#transcriptDetails'),
   transcript: document.querySelector('#transcript'),
+  currentResult: document.querySelector('#currentResult'),
+  testProgress: document.querySelector('#testProgress'),
+  resetProgressButton: document.querySelector('#resetProgressButton'),
 };
 
 init().catch((error) => {
@@ -37,6 +42,7 @@ async function init() {
   if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
   state.data = await response.json();
+  state.selections = loadSelections();
   state.lot = state.data.lots[0];
   state.question = state.lot.questions[0];
 
@@ -57,6 +63,7 @@ async function init() {
   });
 
   els.nextButton.addEventListener('click', goToNextQuestion);
+  els.resetProgressButton.addEventListener('click', resetProgress);
 }
 
 function fillLotSelect() {
@@ -70,7 +77,8 @@ function fillQuestionSelect() {
   els.questionSelect.replaceChildren(
     ...state.lot.questions.map((question) => {
       const hasAudio = question.audioUrl ? '🎧 ' : '';
-      return new Option(`${hasAudio}Question ${question.number}`, String(question.number));
+      const answered = getSelectedCode(question) ? '✓ ' : '';
+      return new Option(`${answered}${hasAudio}Question ${question.number}`, String(question.number));
     }),
   );
   els.questionSelect.value = String(state.question.number);
@@ -105,6 +113,7 @@ function render() {
 
   renderAnswers(question);
   renderTranscript(question);
+  renderProgress();
   updateNextButton();
 }
 
@@ -156,7 +165,11 @@ function answerClass(answer, selectedCode) {
 
 function selectAnswer(question, code) {
   state.selections.set(selectionKey(question), code);
+  saveSelections();
+  fillQuestionSelect();
   renderAnswers(question);
+  renderProgress();
+  updateNextButton();
 }
 
 function renderFeedback(question, selectedCode) {
@@ -193,6 +206,75 @@ function renderTranscript(question) {
   }));
 }
 
+function renderProgress() {
+  const currentStats = getLotStats(state.lot);
+  const completeText = currentStats.completed
+    ? `Result for ${state.lot.title}: ${currentStats.correct}/${currentStats.total} correct (${currentStats.percent}%).`
+    : `${state.lot.title}: ${currentStats.answered}/${currentStats.total} questions answered. Result will appear after all ${currentStats.total} questions.`;
+
+  els.currentResult.textContent = completeText;
+  els.currentResult.className = currentStats.completed ? 'result-summary complete' : 'result-summary';
+
+  els.testProgress.replaceChildren(
+    ...state.data.lots.map((lot) => {
+      const stats = getLotStats(lot);
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = progressClass(lot, stats);
+      item.setAttribute('role', 'listitem');
+      item.addEventListener('click', () => selectLot(lot.id));
+
+      const title = document.createElement('strong');
+      title.textContent = lot.title;
+
+      const status = document.createElement('span');
+      status.textContent = progressStatus(stats);
+
+      item.append(title, status);
+      return item;
+    }),
+  );
+}
+
+function progressClass(lot, stats) {
+  const classes = ['progress-pill'];
+  if (lot.id === state.lot.id) classes.push('current');
+  if (stats.completed) classes.push('completed');
+  else if (stats.answered > 0) classes.push('started');
+  return classes.join(' ');
+}
+
+function progressStatus(stats) {
+  if (stats.completed) return `Done · ${stats.correct}/${stats.total} (${stats.percent}%)`;
+  if (stats.answered > 0) return `In progress · ${stats.answered}/${stats.total}`;
+  return 'Not started';
+}
+
+function getLotStats(lot) {
+  const total = lot.questions.length;
+  const answered = lot.questions.filter((question) => getSelectedCode(question, lot)).length;
+  const correct = lot.questions.filter((question) => isCorrectSelection(question, lot)).length;
+  const completed = answered === total;
+  const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
+
+  return { total, answered, correct, completed, percent };
+}
+
+function isCorrectSelection(question, lot = state.lot) {
+  const selectedCode = getSelectedCode(question, lot);
+  if (!selectedCode) return false;
+  return question.answers.some((answer) => answer.code === selectedCode && answer.correct);
+}
+
+function selectLot(lotId) {
+  state.lot = state.data.lots.find((lot) => lot.id === lotId);
+  state.question = state.lot.questions[0];
+  els.lotSelect.value = state.lot.id;
+  fillQuestionSelect();
+  render();
+  scrollQuestionMetaIntoView();
+}
+
 function goToNextQuestion() {
   const questions = state.lot.questions;
   const index = questions.findIndex((question) => question.number === state.question.number);
@@ -210,15 +292,51 @@ function scrollQuestionMetaIntoView() {
 function updateNextButton() {
   const questions = state.lot.questions;
   const index = questions.findIndex((question) => question.number === state.question.number);
-  els.nextButton.textContent = index === questions.length - 1 ? 'Back to question 1' : 'Next question';
+  const stats = getLotStats(state.lot);
+  if (index === questions.length - 1 && stats.completed) {
+    els.nextButton.textContent = 'Review from question 1';
+  } else {
+    els.nextButton.textContent = index === questions.length - 1 ? 'Back to question 1' : 'Next question';
+  }
 }
 
-function getSelectedCode(question) {
-  return state.selections.get(selectionKey(question));
+function getSelectedCode(question, lot = state.lot) {
+  return state.selections.get(selectionKey(question, lot));
 }
 
-function selectionKey(question) {
-  return `${state.lot.id}:${question.number}`;
+function selectionKey(question, lot = state.lot) {
+  return `${lot.id}:${question.number}`;
+}
+
+function loadSelections() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return new Map();
+    return new Map(Object.entries(parsed).filter(([, value]) => typeof value === 'string'));
+  } catch (error) {
+    console.warn('Could not load saved progress', error);
+    return new Map();
+  }
+}
+
+function saveSelections() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(state.selections)));
+  } catch (error) {
+    console.warn('Could not save progress', error);
+  }
+}
+
+function resetProgress() {
+  const confirmed = window.confirm('Clear all locally saved answers and progress?');
+  if (!confirmed) return;
+
+  state.selections.clear();
+  localStorage.removeItem(STORAGE_KEY);
+  fillQuestionSelect();
+  render();
 }
 
 function splitTranscript(text) {
