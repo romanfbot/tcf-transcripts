@@ -7,7 +7,7 @@ Published site: https://romanfbot.github.io/better-tv5monde-tcf/
 ## Why this is better than the original TV5MONDE practice flow
 
 - **Transcripts:** every listening question includes an automatically generated French transcript next to the audio, so you can review what you heard after answering.
-- **Immediate answer review:** the correct answer is shown right after you choose an option, instead of only after finishing the full test.
+- **Second attempt:** if your first choice is wrong, the site prompts you to try once more before revealing the correct answer.
 - **Question-by-question practice:** you can jump between tests and individual questions without restarting a full timed flow.
 - **Original materials preserved:** audio, images, answer options, and source links still come from TV5MONDE.
 
