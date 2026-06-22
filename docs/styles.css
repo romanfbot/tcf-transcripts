@@ -328,7 +328,8 @@ audio { width: 100%; }
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
-.answer:hover { transform: translateY(-1px); }
+.answer:hover:not(:disabled) { transform: translateY(-1px); }
+.answer:disabled { cursor: default; }
 
 .answer strong {
   display: inline-grid;

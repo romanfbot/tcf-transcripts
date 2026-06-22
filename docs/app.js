@@ -1,4 +1,6 @@
-const STORAGE_KEY = 'better-tv5monde-tcf-progress-v1';
+const STORAGE_KEY = 'better-tv5monde-tcf-progress-v2';
+const LEGACY_STORAGE_KEY = 'better-tv5monde-tcf-progress-v1';
+const MAX_ATTEMPTS = 2;
 
 const state = {
   data: null,
@@ -77,8 +79,9 @@ function fillQuestionSelect() {
   els.questionSelect.replaceChildren(
     ...state.lot.questions.map((question) => {
       const hasAudio = question.audioUrl ? '🎧 ' : '';
-      const answered = getSelectedCode(question) ? '✓ ' : '';
-      return new Option(`${answered}${hasAudio}Question ${question.number}`, String(question.number));
+      const attemptState = getAttemptState(question);
+      const progress = attemptState.completed ? '✓ ' : attemptState.attempts.length > 0 ? '↻ ' : '';
+      return new Option(`${progress}${hasAudio}Question ${question.number}`, String(question.number));
     }),
   );
   els.questionSelect.value = String(state.question.number);
@@ -118,15 +121,16 @@ function render() {
 }
 
 function renderAnswers(question) {
+  const attemptState = getAttemptState(question);
   const selectedCode = getSelectedCode(question);
-  const answered = Boolean(selectedCode);
 
   els.answers.replaceChildren(
     ...question.answers.map((answer) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = answerClass(answer, selectedCode);
+      button.className = answerClass(answer, attemptState);
       button.setAttribute('aria-pressed', String(answer.code === selectedCode));
+      button.disabled = attemptState.completed;
       button.addEventListener('click', () => selectAnswer(question, answer.code));
 
       const code = document.createElement('strong');
@@ -137,13 +141,13 @@ function renderAnswers(question) {
 
       button.append(code, text);
 
-      if (answered && answer.correct) {
+      if (attemptState.completed && answer.correct) {
         const badge = document.createElement('em');
-        badge.textContent = 'Correct answer';
+        badge.textContent = answer.code === selectedCode ? 'Correct' : 'Correct answer';
         button.append(badge);
-      } else if (answered && answer.code === selectedCode && !answer.correct) {
+      } else if (answer.code === selectedCode && !answer.correct) {
         const badge = document.createElement('em');
-        badge.textContent = 'Your answer';
+        badge.textContent = attemptState.completed ? 'Your answer' : 'Try again';
         button.append(badge);
       }
 
@@ -151,20 +155,25 @@ function renderAnswers(question) {
     }),
   );
 
-  renderFeedback(question, selectedCode);
+  renderFeedback(question, attemptState);
 }
 
-function answerClass(answer, selectedCode) {
+function answerClass(answer, attemptState) {
   const classes = ['answer'];
+  const selectedCode = getLastAttempt(attemptState);
   if (!selectedCode) return classes.join(' ');
-  if (answer.correct) classes.push('correct');
+  if (attemptState.completed && answer.correct) classes.push('correct');
   if (answer.code === selectedCode) classes.push('selected');
   if (answer.code === selectedCode && !answer.correct) classes.push('incorrect');
   return classes.join(' ');
 }
 
 function selectAnswer(question, code) {
-  state.selections.set(selectionKey(question), code);
+  const attemptState = getAttemptState(question);
+  if (attemptState.completed) return;
+
+  const nextAttempts = [...attemptState.attempts, code].slice(0, MAX_ATTEMPTS);
+  state.selections.set(selectionKey(question), { attempts: nextAttempts });
   saveSelections();
   fillQuestionSelect();
   renderAnswers(question);
@@ -172,9 +181,10 @@ function selectAnswer(question, code) {
   updateNextButton();
 }
 
-function renderFeedback(question, selectedCode) {
+function renderFeedback(question, attemptState) {
+  const selectedCode = getLastAttempt(attemptState);
   if (!selectedCode) {
-    els.feedback.textContent = 'Choose an answer to reveal the correct option.';
+    els.feedback.textContent = 'Choose an answer. If it is not correct, you will get one more try.';
     els.feedback.className = 'feedback muted';
     return;
   }
@@ -183,6 +193,9 @@ function renderFeedback(question, selectedCode) {
   if (selected?.correct) {
     els.feedback.textContent = `Correct — ${selectedCode}.`;
     els.feedback.className = 'feedback correct';
+  } else if (!attemptState.completed) {
+    els.feedback.textContent = 'Not quite — try one more time.';
+    els.feedback.className = 'feedback incorrect';
   } else {
     els.feedback.textContent = `Not quite. Correct answer: ${question.correctAnswer}.`;
     els.feedback.className = 'feedback incorrect';
@@ -240,30 +253,37 @@ function progressClass(lot, stats) {
   const classes = ['progress-pill'];
   if (lot.id === state.lot.id) classes.push('current');
   if (stats.completed) classes.push('completed');
-  else if (stats.answered > 0) classes.push('started');
+  else if (stats.attempted > 0) classes.push('started');
   return classes.join(' ');
 }
 
 function progressStatus(stats) {
   if (stats.completed) return `Done · ${stats.correct}/${stats.total} (${stats.percent}%)`;
-  if (stats.answered > 0) return `In progress · ${stats.answered}/${stats.total}`;
+  if (stats.attempted > 0) return `In progress · ${stats.answered}/${stats.total}`;
   return 'Not started';
 }
 
 function getLotStats(lot) {
   const total = lot.questions.length;
-  const answered = lot.questions.filter((question) => getSelectedCode(question, lot)).length;
+  const attempted = lot.questions.filter((question) => getAttemptState(question, lot).attempts.length > 0).length;
+  const answered = lot.questions.filter((question) => isQuestionComplete(question, lot)).length;
   const correct = lot.questions.filter((question) => isCorrectSelection(question, lot)).length;
   const completed = answered === total;
   const percent = total === 0 ? 0 : Math.round((correct / total) * 100);
 
-  return { total, answered, correct, completed, percent };
+  return { total, attempted, answered, correct, completed, percent };
 }
 
 function isCorrectSelection(question, lot = state.lot) {
-  const selectedCode = getSelectedCode(question, lot);
+  const attemptState = getAttemptState(question, lot);
+  if (!attemptState.completed) return false;
+  const selectedCode = getLastAttempt(attemptState);
   if (!selectedCode) return false;
   return question.answers.some((answer) => answer.code === selectedCode && answer.correct);
+}
+
+function isQuestionComplete(question, lot = state.lot) {
+  return getAttemptState(question, lot).completed;
 }
 
 function selectLot(lotId) {
@@ -301,7 +321,27 @@ function updateNextButton() {
 }
 
 function getSelectedCode(question, lot = state.lot) {
-  return state.selections.get(selectionKey(question, lot));
+  return getLastAttempt(getAttemptState(question, lot));
+}
+
+function getAttemptState(question, lot = state.lot) {
+  const stored = state.selections.get(selectionKey(question, lot));
+  const attempts = normalizeAttempts(stored);
+  const lastAttempt = getLastAttempt({ attempts });
+  const correct = question.answers.some((answer) => answer.code === lastAttempt && answer.correct);
+  const completed = correct || attempts.length >= MAX_ATTEMPTS;
+  return { attempts, completed };
+}
+
+function normalizeAttempts(stored) {
+  if (typeof stored === 'string') return [stored];
+  if (!stored || typeof stored !== 'object') return [];
+  if (!Array.isArray(stored.attempts)) return [];
+  return stored.attempts.filter((code) => typeof code === 'string').slice(0, MAX_ATTEMPTS);
+}
+
+function getLastAttempt(attemptState) {
+  return attemptState.attempts.at(-1);
 }
 
 function selectionKey(question, lot = state.lot) {
@@ -310,15 +350,21 @@ function selectionKey(question, lot = state.lot) {
 
 function loadSelections() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return new Map();
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return new Map();
-    return new Map(Object.entries(parsed).filter(([, value]) => typeof value === 'string'));
+    return new Map(Object.entries(parsed).map(([key, value]) => [key, normalizeStoredSelection(value)]));
   } catch (error) {
     console.warn('Could not load saved progress', error);
     return new Map();
   }
+}
+
+function normalizeStoredSelection(value) {
+  if (typeof value === 'string') return { attempts: [value] };
+  if (!value || typeof value !== 'object') return { attempts: [] };
+  return { attempts: normalizeAttempts(value) };
 }
 
 function saveSelections() {
@@ -335,6 +381,7 @@ function resetProgress() {
 
   state.selections.clear();
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
   fillQuestionSelect();
   render();
 }
